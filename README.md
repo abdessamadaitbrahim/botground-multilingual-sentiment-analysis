@@ -1,13 +1,13 @@
 # Botground: Multilingual Sentiment Analysis for Chatbot Conversations
 
-[![Overview](https://img.shields.io/badge/Overview-16A34A?style=flat-square)](#overview)
-[![How it works](https://img.shields.io/badge/How%20it%20works-16A34A?style=flat-square)](#how-it-works)
-[![Models](https://img.shields.io/badge/Models-16A34A?style=flat-square)](#the-three-models)
-[![Dataset](https://img.shields.io/badge/Dataset-16A34A?style=flat-square)](#dataset)
+[![Overview](https://img.shields.io/badge/Overview-2563EB?style=flat-square)](#overview)
+[![How it works](https://img.shields.io/badge/How%20it%20works-7C3AED?style=flat-square)](#how-it-works)
+[![Models](https://img.shields.io/badge/Models-DC2626?style=flat-square)](#the-three-models)
+[![Dataset](https://img.shields.io/badge/Dataset-F59E0B?style=flat-square)](#dataset)
 [![Results](https://img.shields.io/badge/Results-16A34A?style=flat-square)](#results)
-[![Dashboard](https://img.shields.io/badge/Dashboard-16A34A?style=flat-square)](#dashboard)
-[![Quick start](https://img.shields.io/badge/Quick%20start-16A34A?style=flat-square)](#quick-start)
-[![Limitations](https://img.shields.io/badge/Limitations-16A34A?style=flat-square)](#limitations)
+[![Dashboard](https://img.shields.io/badge/Dashboard-0891B2?style=flat-square)](#dashboard)
+[![Quick start](https://img.shields.io/badge/Quick%20start-DB2777?style=flat-square)](#quick-start)
+[![Limitations](https://img.shields.io/badge/Limitations-64748B?style=flat-square)](#limitations)
 
 ## Overview
 
