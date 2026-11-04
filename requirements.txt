@@ -1,0 +1,6 @@
+# Dashboard and inference
+flask>=3.0
+pandas>=2.0
+torch>=2.2
+transformers>=4.41
+safetensors>=0.4

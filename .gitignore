@@ -1,0 +1,36 @@
+# Confidential data: never commit (only the README placeholder is tracked)
+data/*
+!data/README.md
+
+# Fine-tuned weights: trained on confidential data and too large for Git
+models/*
+!models/README.md
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Local databases (contain analysed conversations)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment and secrets
+venv/
+.venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE and OS
+.vscode/
+Thumbs.db
+desktop.ini
+.DS_Store
