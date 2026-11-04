@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ─── PAGE HEADER ─── -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Live Analysis</h1>
+        <p>Analyze sentiment of a text or full conversation in real-time</p>
+    </div>
+    <div class="page-header-right">
+        <div class="live-pill">
+            <span class="live-dot"></span>
+            LIVE
+        </div>
+    </div>
+</div>
+
+<!-- ─── MODEL SELECTOR ─── -->
+<div class="panel" style="margin-bottom:24px;">
+    <div class="panel-header">
+        <div class="panel-title">Model Configuration</div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 2fr; gap:20px; align-items:center;">
+        <div class="form-group" style="margin:0;">
+            <label class="form-label">Select Model</label>
+            <select class="form-control" id="model-select">
+                {% for model in models %}
+                <option value="{{ model }}">{{ model }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <!-- LANGUAGE -->
+        <div class="form-group" style="margin:0;">
+            <label class="form-label">Select Language</label>
+            <select class="form-control" id="language-select">
+                <option value="" disabled selected>Select language</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="en">🇬🇧 English</option>
+                <option value="darija">🇲🇦 Darija</option>
+            </select>
+        </div>
+
+        <div style="display:flex; gap:12px; align-items:flex-end; padding-bottom:2px;">
+            <div style="background:var(--bg-raised); border:1px solid var(--border);
+                        border-radius:var(--radius-sm); padding:10px 16px; flex:1; text-align:center;">
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">XLM-RoBERTa</div>
+                <div style="font-size:13px; font-weight:600; color:var(--text);">FR / EN / AR</div>
+            </div>
+            <div style="background:var(--bg-raised); border:1px solid var(--border);
+                        border-radius:var(--radius-sm); padding:10px 16px; flex:1; text-align:center;">
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">mBERT</div>
+                <div style="font-size:13px; font-weight:600; color:var(--text);">Multilingual</div>
+            </div>
+            <div style="background:var(--bg-raised); border:1px solid var(--border);
+                        border-radius:var(--radius-sm); padding:10px 16px; flex:1; text-align:center;">
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">DarijaBERT</div>
+                <div style="font-size:13px; font-weight:600; color:var(--accent);">Darija Specialist</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── TABS ─── -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('single', this)">
+        Single Message
+    </button>
+    <button class="tab-btn" onclick="switchTab('conversation', this)">
+        Full Conversation
+    </button>
+</div>
+
+<!-- ─── TAB : SINGLE MESSAGE ─── -->
+<div class="tab-content active" id="tab-single">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+        <!-- Input -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Input Message</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-control" id="single-text"
+                    placeholder="Type a message in French, English or Darija..." rows="6"></textarea>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-primary" onclick="analyzeSingle()" id="btn-single">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    Analyze
+                </button>
+                <button class="btn btn-secondary" onclick="clearSingle()">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div class="panel" id="single-result" style="display:none;">
+            <div class="panel-header">
+                <div class="panel-title">Analysis Result</div>
+                <span id="single-lang-badge" style="font-size:12px; color:var(--text-muted);"></span>
+            </div>
+
+            <!-- Sentiment -->
+            <div style="margin-bottom:20px;">
+                <div style="font-size:11px; font-weight:600; color:var(--text-muted);
+                            letter-spacing:.05em; text-transform:uppercase; margin-bottom:8px;">
+                    Sentiment
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="result-sentiment-badge" id="single-sentiment-label"></span>
+                    <span id="single-sentiment-badge"></span>
+                </div>
+            </div>
+
+            <!-- Confidence -->
+            <div style="margin-bottom:20px;">
+                <div style="font-size:11px; font-weight:600; color:var(--text-muted);
+                            letter-spacing:.05em; text-transform:uppercase; margin-bottom:8px;">
+                    Confidence
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:22px;
+                            font-weight:700; color:var(--accent);" id="single-confidence">
+                </div>
+            </div>
+
+            <!-- Score Bars -->
+            <div>
+                <div style="font-size:11px; font-weight:600; color:var(--text-muted);
+                            letter-spacing:.05em; text-transform:uppercase; margin-bottom:12px;">
+                    Score Breakdown
+                </div>
+                <div class="score-bar-wrap">
+                    <div class="score-bar-label">
+                        <span style="color:var(--positive); font-weight:700;">Positive</span>
+                        <span style="color:var(--text-muted);" id="score-positive-val"></span>
+                    </div>
+                    <div class="score-bar-track">
+                        <div class="score-bar-fill positive" id="score-positive-bar" style="width:0%;"></div>
+                    </div>
+                </div>
+                <div class="score-bar-wrap">
+                    <div class="score-bar-label">
+                        <span style="color:var(--negative); font-weight:700;">Negative</span>
+                        <span style="color:var(--text-muted);" id="score-negative-val"></span>
+                    </div>
+                    <div class="score-bar-track">
+                        <div class="score-bar-fill negative" id="score-negative-bar" style="width:0%;"></div>
+                    </div>
+                </div>
+                <div class="score-bar-wrap">
+                    <div class="score-bar-label">
+                        <span style="color:var(--neutral); font-weight:700;">Neutral</span>
+                        <span style="color:var(--text-muted);" id="score-neutral-val"></span>
+                    </div>
+                    <div class="score-bar-track">
+                        <div class="score-bar-fill neutral" id="score-neutral-bar" style="width:0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model used -->
+            <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);
+                        font-size:12px; color:var(--text-muted);">
+                Model : <span id="single-model-used" style="color:var(--text); font-weight:600;"></span>
+                &nbsp;|&nbsp;
+                Language : <span id="single-lang-detected"
+                    style="color:var(--accent); font-weight:600;"></span>
+            </div>
+        </div>
+
+        <!-- Placeholder when no result -->
+        <div class="panel" id="single-placeholder" style="display:flex; align-items:center; justify-content:center;">
+            <div class="empty-state">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="1.5">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                <p>Enter a message and click Analyze</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ─── TAB : FULL CONVERSATION ─── -->
+<div class="tab-content" id="tab-conversation">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+        <!-- Input -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Conversation Input</div>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+                Enter one message per line. Each line will be analyzed separately.
+            </p>
+            <div class="form-group">
+                <label class="form-label">Messages</label>
+                <textarea class="form-control" id="conv-text" placeholder="Message 1&#10;Message 2&#10;Message 3..."
+                    rows="10"></textarea>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-primary" onclick="analyzeConversation()" id="btn-conv">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    Analyze Conversation
+                </button>
+                <button class="btn btn-secondary" onclick="clearConversation()">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+            <!-- Overall KPIs -->
+            <div id="conv-kpis" style="display:none;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                    <div class="kpi-card" style="padding:16px;">
+                        <div class="kpi-label">Overall Sentiment</div>
+                        <div class="kpi-value" id="conv-final-sentiment" style="font-size:20px;"></div>
+                    </div>
+                    <div class="kpi-card" style="padding:16px;">
+                        <div class="kpi-label">Satisfaction Score</div>
+                        <div class="kpi-value" id="conv-satisfaction" style="font-size:20px; color:var(--positive);">
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="padding:16px;">
+                        <div class="kpi-label">Total Messages</div>
+                        <div class="kpi-value" id="conv-total" style="font-size:20px;"></div>
+                    </div>
+                    <div class="kpi-card" style="padding:16px;">
+                        <div class="kpi-label">Model Used</div>
+                        <div class="kpi-value" id="conv-model" style="font-size:14px; color:var(--accent);"></div>
+                    </div>
+                </div>
+
+                <!-- Score bars -->
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header">
+                        <div class="panel-title">Score Breakdown</div>
+                    </div>
+                    <div class="score-bar-wrap">
+                        <div class="score-bar-label">
+                            <span style="color:var(--positive); font-weight:700;">Positive</span>
+                            <span style="color:var(--text-muted);" id="conv-score-pos-val"></span>
+                        </div>
+                        <div class="score-bar-track">
+                            <div class="score-bar-fill positive" id="conv-score-pos" style="width:0%;"></div>
+                        </div>
+                    </div>
+                    <div class="score-bar-wrap">
+                        <div class="score-bar-label">
+                            <span style="color:var(--negative); font-weight:700;">Negative</span>
+                            <span style="color:var(--text-muted);" id="conv-score-neg-val"></span>
+                        </div>
+                        <div class="score-bar-track">
+                            <div class="score-bar-fill negative" id="conv-score-neg" style="width:0%;"></div>
+                        </div>
+                    </div>
+                    <div class="score-bar-wrap">
+                        <div class="score-bar-label">
+                            <span style="color:var(--neutral); font-weight:700;">Neutral</span>
+                            <span style="color:var(--text-muted);" id="conv-score-neu-val"></span>
+                        </div>
+                        <div class="score-bar-track">
+                            <div class="score-bar-fill neutral" id="conv-score-neu" style="width:0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message by message -->
+            <div class="panel" id="conv-messages" style="display:none;">
+                <div class="panel-header">
+                    <div class="panel-title">Message Analysis</div>
+                </div>
+                <div id="conv-messages-list"></div>
+            </div>
+
+            <!-- Placeholder -->
+            <div class="panel" id="conv-placeholder"
+                style="display:flex; align-items:center; justify-content:center; min-height:200px;">
+                <div class="empty-state">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)"
+                        stroke-width="1.5">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <p>Enter a conversation and click Analyze</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const COLORS = {
+        positive: "#10b981",
+        negative: "#ef4444",
+        neutral: "#6b7280"
+    };
+
+    // ─── TABS ───
+    function switchTab(tab, btn) {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + tab).classList.add("active");
+    }
+
+    // ─── SINGLE ANALYSIS ───
+    async function analyzeSingle() {
+        const text = document.getElementById("single-text").value.trim();
+        const model = document.getElementById("model-select").value;
+        const language = document.getElementById("language-select").value;
+
+        if (!language) {
+            showToast("Please select a language", "error");
+            return;
+        }
+
+        if (!text) { showToast("Please enter a message", "error"); return; }
+
+        const btn = document.getElementById("btn-single");
+        btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/predict/single", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text, model, language })
+            });
+            const data = await res.json();
+
+            if (data.error) { showToast(data.error, "error"); return; }
+
+            // Show result
+            document.getElementById("single-placeholder").style.display = "none";
+            document.getElementById("single-result").style.display = "block";
+
+            const color = COLORS[data.sentiment];
+
+            document.getElementById("single-sentiment-label").textContent = data.sentiment.charAt(0).toUpperCase() + data.sentiment.slice(1);
+            document.getElementById("single-sentiment-label").style.color = color;
+            document.getElementById("single-sentiment-badge").innerHTML =
+                `<span class="badge badge-${data.sentiment}"><span class="badge-dot"></span>${data.sentiment}</span>`;
+            document.getElementById("single-confidence").textContent = data.confidence + "%";
+            document.getElementById("single-model-used").textContent = data.model;
+            document.getElementById("single-lang-detected").textContent = data.language.toUpperCase();
+
+            // Score bars
+            ["positive", "negative", "neutral"].forEach(s => {
+                const val = data.scores[s] || 0;
+                document.getElementById(`score-${s}-val`).textContent = val + "%";
+                document.getElementById(`score-${s}-bar`).style.width = val + "%";
+            });
+
+            showToast("Analysis complete", "success");
+
+        } catch (err) {
+            showToast("Error: " + err.message, "error");
+        } finally {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Analyze`;
+            btn.disabled = false;
+        }
+    }
+
+    function clearSingle() {
+        document.getElementById("single-text").value = "";
+        document.getElementById("single-result").style.display = "none";
+        document.getElementById("single-placeholder").style.display = "block";
+    }
+
+    // ─── CONVERSATION ANALYSIS ───
+    async function analyzeConversation() {
+        const text = document.getElementById("conv-text").value.trim();
+        const model = document.getElementById("model-select").value;
+        const language = document.getElementById("language-select").value;
+        const messages = text.split("\n").map(m => m.trim()).filter(m => m);
+
+        if (!language) { showToast("Please select a language", "error"); return; }
+        if (!messages.length) { showToast("Please enter at least one message", "error"); return; }
+
+        const btn = document.getElementById("btn-conv");
+        btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/predict/conversation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages, model, language })
+            });
+            const data = await res.json();
+
+            if (data.error) { showToast(data.error, "error"); return; }
+
+            // Show KPIs
+            document.getElementById("conv-placeholder").style.display = "none";
+            document.getElementById("conv-kpis").style.display = "grid";
+            document.getElementById("conv-messages").style.display = "block";
+
+            const color = COLORS[data.final_sentiment];
+
+            document.getElementById("conv-final-sentiment").textContent =
+                data.final_sentiment.charAt(0).toUpperCase() + data.final_sentiment.slice(1);
+            document.getElementById("conv-final-sentiment").style.color = color;
+            document.getElementById("conv-satisfaction").textContent = data.satisfaction + "%";
+            document.getElementById("conv-total").textContent = data.total_messages;
+            document.getElementById("conv-model").textContent = data.model;
+
+            // Score bars — count based
+            const total = data.total_messages;
+            const posP = Math.round(data.positive_count / total * 100);
+            const negP = Math.round(data.negative_count / total * 100);
+            const neuP = Math.round(data.neutral_count / total * 100);
+
+            document.getElementById("conv-score-pos-val").textContent = posP + "%";
+            document.getElementById("conv-score-pos").style.width = posP + "%";
+            document.getElementById("conv-score-neg-val").textContent = negP + "%";
+            document.getElementById("conv-score-neg").style.width = negP + "%";
+            document.getElementById("conv-score-neu-val").textContent = neuP + "%";
+            document.getElementById("conv-score-neu").style.width = neuP + "%";
+
+            // Message by message
+            const list = document.getElementById("conv-messages-list");
+            list.innerHTML = "";
+            data.messages.forEach((msg, i) => {
+                list.innerHTML += `
+            <div class="message-card ${msg.sentiment}">
+                <div class="message-num">Message ${i + 1}</div>
+                <div class="message-text">${escapeHtml(msg.text)}</div>
+                <div class="message-meta">
+                    <span class="message-sentiment" style="color:${COLORS[msg.sentiment]};">
+                        ${msg.sentiment.charAt(0).toUpperCase() + msg.sentiment.slice(1)}
+                    </span>
+                    <span class="message-confidence">Confidence: ${msg.confidence}%</span>
+                </div>
+            </div>`;
+            });
+
+            showToast("Conversation analyzed", "success");
+
+        } catch (err) {
+            showToast("Error: " + err.message, "error");
+        } finally {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Analyze Conversation`;
+            btn.disabled = false;
+        }
+    }
+
+    function clearConversation() {
+        document.getElementById("conv-text").value = "";
+        document.getElementById("conv-kpis").style.display = "none";
+        document.getElementById("conv-messages").style.display = "none";
+        document.getElementById("conv-placeholder").style.display = "flex";
+    }
+</script>
+{% endblock %}

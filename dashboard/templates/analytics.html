@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ─── PAGE HEADER ─── -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Analytics</h1>
+        <p>Deep dive into sentiment patterns and performance</p>
+    </div>
+    <div class="page-header-right">
+        <form method="GET" action="{{ url_for('analytics') }}" id="date-form">
+            <div class="date-range">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8"  y1="2" x2="8"  y2="6"/>
+                    <line x1="3"  y1="10" x2="21" y2="10"/>
+                </svg>
+                <input type="date" name="date_from" value="{{ date_from }}"
+                       onchange="document.getElementById('date-form').submit()">
+                <span style="color:var(--text-dim);">—</span>
+                <input type="date" name="date_to" value="{{ date_to }}"
+                       onchange="document.getElementById('date-form').submit()">
+            </div>
+        </form>
+        <a href="{{ url_for('api_export') }}?date_from={{ date_from }}&date_to={{ date_to }}"
+           class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export
+        </a>
+    </div>
+</div>
+
+{% if stats.total == 0 %}
+<div class="panel">
+    <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+             stroke="var(--text-dim)" stroke-width="1.5">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6"  y1="20" x2="6"  y2="14"/>
+        </svg>
+        <p>No data available. Go to
+            <a href="{{ url_for('analyze') }}" style="color:var(--accent);">Live Analysis</a>
+            to start analyzing conversations.
+        </p>
+    </div>
+</div>
+
+{% else %}
+
+<!-- ─── KPI ROW ─── -->
+<div class="kpi-grid" style="margin-bottom:28px;">
+
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:var(--primary-glow);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="var(--primary)" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+        </div>
+        <div class="kpi-label">Total Analyzed</div>
+        <div class="kpi-value">{{ stats.total }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:var(--positive-bg);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="var(--positive)" stroke-width="2">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                <polyline points="16 7 22 7 22 13"/>
+            </svg>
+        </div>
+        <div class="kpi-label">Satisfaction Rate</div>
+        <div class="kpi-value" style="color:var(--positive);">
+            {{ stats.satisfaction_rate }}%
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:var(--negative-bg);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="var(--negative)" stroke-width="2">
+                <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/>
+                <polyline points="16 17 22 17 22 11"/>
+            </svg>
+        </div>
+        <div class="kpi-label">Dissatisfaction Rate</div>
+        <div class="kpi-value" style="color:var(--negative);">
+            {{ stats.negative_rate }}%
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:var(--accent-glow);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="var(--accent)" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+        </div>
+        <div class="kpi-label">Avg Confidence</div>
+        <div class="kpi-value" style="color:var(--accent);">
+            {{ stats.avg_confidence }}%
+        </div>
+    </div>
+
+</div>
+
+<!-- ─── SCORE BARS ─── -->
+<div class="panel" style="margin-bottom:28px;">
+    <div class="panel-header">
+        <div class="panel-title">Average Sentiment Scores</div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:28px;">
+        <div>
+            <div class="score-bar-label">
+                <span style="color:var(--positive); font-weight:700; font-size:14px;">
+                    Positive
+                </span>
+                <span style="color:var(--text); font-family:'JetBrains Mono',monospace;
+                             font-weight:700; font-size:16px;">
+                    {{ stats.avg_scores.positive }}%
+                </span>
+            </div>
+            <div class="score-bar-track" style="height:8px;">
+                <div class="score-bar-fill positive"
+                     style="width:{{ stats.avg_scores.positive }}%;"></div>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+                {{ stats.positive }} conversations
+            </div>
+        </div>
+        <div>
+            <div class="score-bar-label">
+                <span style="color:var(--negative); font-weight:700; font-size:14px;">
+                    Negative
+                </span>
+                <span style="color:var(--text); font-family:'JetBrains Mono',monospace;
+                             font-weight:700; font-size:16px;">
+                    {{ stats.avg_scores.negative }}%
+                </span>
+            </div>
+            <div class="score-bar-track" style="height:8px;">
+                <div class="score-bar-fill negative"
+                     style="width:{{ stats.avg_scores.negative }}%;"></div>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+                {{ stats.negative }} conversations
+            </div>
+        </div>
+        <div>
+            <div class="score-bar-label">
+                <span style="color:var(--neutral); font-weight:700; font-size:14px;">
+                    Neutral
+                </span>
+                <span style="color:var(--text); font-family:'JetBrains Mono',monospace;
+                             font-weight:700; font-size:16px;">
+                    {{ stats.avg_scores.neutral }}%
+                </span>
+            </div>
+            <div class="score-bar-track" style="height:8px;">
+                <div class="score-bar-fill neutral"
+                     style="width:{{ stats.avg_scores.neutral }}%;"></div>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+                {{ stats.neutral }} conversations
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── CHARTS ROW 1 ─── -->
+<div class="charts-row-2" style="margin-bottom:28px;">
+
+    <!-- Sentiment Distribution Donut -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Sentiment Distribution</div>
+        </div>
+        <canvas id="donutChart" height="260"></canvas>
+    </div>
+
+    <!-- Sentiment Trend -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Sentiment Trend</div>
+        </div>
+        <canvas id="trendChart" height="260"></canvas>
+    </div>
+
+</div>
+
+<!-- ─── CHARTS ROW 2 ─── -->
+<div class="charts-row-2" style="margin-bottom:28px;">
+
+    <!-- Sentiment by Language -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Sentiment by Language</div>
+        </div>
+        <canvas id="langChart" height="260"></canvas>
+    </div>
+
+    <!-- Language Distribution -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Language Distribution</div>
+        </div>
+        <canvas id="langPieChart" height="260"></canvas>
+    </div>
+
+</div>
+
+<!-- ─── LANGUAGE BREAKDOWN CARDS ─── -->
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px;">
+    {% for lang, count in stats.language_counts.items() %}
+    <div class="kpi-card">
+        <div class="kpi-label">
+            {% if lang == 'fr' %}&#127467;&#127479; French
+            {% elif lang == 'en' %}&#127468;&#127463; English
+            {% elif lang == 'darija' %}&#127474;&#127462; Darija
+            {% else %}&#127760; {{ lang | upper }}
+            {% endif %}
+        </div>
+        <div class="kpi-value">{{ count }}</div>
+        <div style="color:var(--text-muted); font-size:12px;">
+            {{ (count / stats.total * 100) | round(1) }}% of total
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const sentimentCounts = {{ stats.sentiment_counts | tojson }};
+const trendData       = {{ stats.trend | tojson }};
+const langSentiment   = {{ stats.lang_sentiment | tojson }};
+const languageCounts  = {{ stats.language_counts | tojson }};
+
+const COLORS = {
+    positive : "#10b981",
+    negative : "#ef4444",
+    neutral  : "#6b7280",
+    grid     : "#1e2135",
+    text     : "#9ca3af",
+    bg       : "#141620"
+};
+
+Chart.defaults.color       = COLORS.text;
+Chart.defaults.borderColor = COLORS.grid;
+Chart.defaults.font.family = "Inter, sans-serif";
+
+const sentiments = ["positive", "negative", "neutral"];
+
+// ─── DONUT CHART ───
+new Chart(document.getElementById("donutChart").getContext("2d"), {
+    type : "doughnut",
+    data : {
+        labels   : Object.keys(sentimentCounts),
+        datasets : [{
+            data            : Object.values(sentimentCounts),
+            backgroundColor : Object.keys(sentimentCounts).map(k => COLORS[k] || "#666"),
+            borderColor     : COLORS.bg,
+            borderWidth     : 3,
+            hoverBorderWidth: 0
+        }]
+    },
+    options : {
+        cutout  : "68%",
+        plugins : {
+            legend: {
+                position : "bottom",
+                labels   : { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+            }
+        }
+    }
+});
+
+// ─── TREND CHART ───
+const dates = [...new Set(trendData.map(d => d.date))].sort();
+
+new Chart(document.getElementById("trendChart").getContext("2d"), {
+    type : "line",
+    data : {
+        labels   : dates,
+        datasets : sentiments.map(s => ({
+            label          : s.charAt(0).toUpperCase() + s.slice(1),
+            data           : dates.map(date => {
+                const found = trendData.find(d => d.date === date && d.sentiment === s);
+                return found ? found.count : 0;
+            }),
+            borderColor    : COLORS[s],
+            backgroundColor: COLORS[s] + "20",
+            borderWidth    : 2.5,
+            pointRadius    : 4,
+            tension        : 0.4,
+            fill           : false
+        }))
+    },
+    options : {
+        responsive : true,
+        scales     : {
+            x : { grid: { color: COLORS.grid } },
+            y : { grid: { color: COLORS.grid }, beginAtZero: true, ticks: { stepSize: 1 } }
+        },
+        plugins : {
+            legend: {
+                position : "bottom",
+                labels   : { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+            }
+        }
+    }
+});
+
+// ─── LANGUAGE SENTIMENT CHART ───
+const languages = [...new Set(langSentiment.map(d => d.language))];
+
+new Chart(document.getElementById("langChart").getContext("2d"), {
+    type : "bar",
+    data : {
+        labels   : languages.map(l => l.toUpperCase()),
+        datasets : sentiments.map(s => ({
+            label          : s.charAt(0).toUpperCase() + s.slice(1),
+            data           : languages.map(lang => {
+                const found = langSentiment.find(d => d.language === lang && d.sentiment === s);
+                return found ? found.count : 0;
+            }),
+            backgroundColor: COLORS[s] + "cc",
+            borderColor    : COLORS[s],
+            borderWidth    : 1,
+            borderRadius   : 4
+        }))
+    },
+    options : {
+        responsive : true,
+        scales     : {
+            x : { grid: { display: false } },
+            y : { grid: { color: COLORS.grid }, beginAtZero: true, ticks: { stepSize: 1 } }
+        },
+        plugins : {
+            legend: {
+                position : "bottom",
+                labels   : { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+            }
+        }
+    }
+});
+
+// ─── LANGUAGE PIE CHART ───
+new Chart(document.getElementById("langPieChart").getContext("2d"), {
+    type : "doughnut",
+    data : {
+        labels   : Object.keys(languageCounts).map(l => l.toUpperCase()),
+        datasets : [{
+            data            : Object.values(languageCounts),
+            backgroundColor : ["#6366f1cc", "#22d3eecc", "#a78bfacc"],
+            borderColor     : COLORS.bg,
+            borderWidth     : 3,
+            hoverBorderWidth: 0
+        }]
+    },
+    options : {
+        cutout  : "60%",
+        plugins : {
+            legend: {
+                position : "bottom",
+                labels   : { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
